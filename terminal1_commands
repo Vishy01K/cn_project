@@ -1,0 +1,5 @@
+# 1. to clean up any old/broken Mininet networks from previous attempts
+sudo mn -c
+
+# 2.to start the Diamond Topology
+sudo python3 ~/project123/topo.py
