@@ -1,5 +1,5 @@
-# 1. to clean up any old/broken Mininet networks from previous attempts
-sudo mn -c
+# 1. Activate Ryu virtual environment
+source ~/ryu_env/bin/activate
 
-# 2.to start the Diamond Topology
-sudo python3 ~/project123/topo.py
+# 2. Start the controller with verbose logging
+ryu-manager --verbose ryu.app.simple_switch_stp_13
