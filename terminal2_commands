@@ -1,0 +1,11 @@
+# 1.Clean up any old/broken Mininet networks from previous attempts
+sudo mn -c
+
+# 2.Start the Diamond Topology
+sudo python3 ~/project123/topo.py
+
+# 3.Start the Server on Host 2 in the background
+mininet> h2 python3 ~/project123/server.py &
+
+# 4.Run the Diagnostic Client on Host 1
+mininet> h1 python3 ~/project123/client.py 10.0.0.2
