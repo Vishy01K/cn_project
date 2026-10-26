@@ -1,4 +1,4 @@
-import socket                                                                                  #This is a UDP echo server. It listens for small messages,Used to measure network latency and packet loss
+import socket                                                                                  #This is a UDP echo server. It listens for small messages,Its Job is to bounce packets back so the client can measure round-trip time and detect loss.
 import time
 
 def start_server():                                                                               
