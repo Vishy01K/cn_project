@@ -1,4 +1,4 @@
-from mininet.topo import Topo
+from mininet.topo import Topo                                                 # Virtual Network, Client and Server Run on this
 from mininet.net import Mininet
 from mininet.node import RemoteController, OVSKernelSwitch
 from mininet.cli import CLI
@@ -14,9 +14,9 @@ class DiamondTopo(Topo):
         s4 = self.addSwitch('s4')
         
         # Hosts
-        h1 = self.addHost('h1')
+        h1 = self.addHost('h1') 
         h2 = self.addHost('h2')
-        
+         
         # Links
         self.addLink(h1, s1)
         self.addLink(s1, s2)
