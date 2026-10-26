@@ -87,4 +87,5 @@ The client reports the result of each probe, including its success or timeout, f
 The current diagnostic client measures application-level RTT and packet loss. Automatic topology discovery, correlation of measurements with individual network paths, and automatic comparison of alternative paths require corresponding controller and path-analysis functionality.
 
 ## Repository
+All the required commands are attached in the repository
 [https://github.com/Vishy01K/cn_project](https://github.com/Vishy01K/cn_project)
