@@ -1,4 +1,4 @@
-import socket
+import socket                                                                                          # Probe Sender,Send Packets and With TimeStamp,Uses Reply Data to Calculate RTT and Packet Loss                                                              
 import time
 
 def start_client(server_ip):
@@ -24,8 +24,8 @@ def start_client(server_ip):
             data, server = sock.recvfrom(1024)
             receive_time = time.time()
             
-            # Calculate RTT
-            rtt = (receive_time - send_time) * 1000 # in milliseconds
+            # Calculating RTT
+            rtt = (receive_time - send_time) * 1000 
             print(f"Packet {i}: Success | RTT: {rtt:.4f} ms")
             
         except socket.timeout:
@@ -37,7 +37,7 @@ def start_client(server_ip):
     sock.close()
 
 if __name__ == "__main__":
-    # Default to 10.0.0.2 (h2 in mininet), but can be passed as argument
+  
     import sys
     target_ip = sys.argv[1] if len(sys.argv) > 1 else '10.0.0.2'
     start_client(target_ip)
