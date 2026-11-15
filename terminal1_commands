@@ -1,5 +1,5 @@
 # 1. Activate Ryu virtual environment
-source ~/ryu_env/bin/activate
+source ~/ryu-env/bin/activate(add /project123 for our project)
 
 # 2. Start the controller with verbose logging
 ryu-manager --verbose ryu.app.simple_switch_stp_13
