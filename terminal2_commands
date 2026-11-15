@@ -1,5 +1,9 @@
 # 1.Clean up any old/broken Mininet networks from previous attempts
 sudo mn -c
+(also when mininet> first pops up "warm-up" the network
+mininet> pingall
+mininet> h2 python3 /home/ak/project123/server.py &
+mininet> h1 python3 /home/ak/project123/client.py 10.0.0.2 10.0.0.254)
 
 D1:
 
