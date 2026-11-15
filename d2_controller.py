@@ -1,18 +1,4 @@
-# ============================================================================
-# D2 - Ryu SDN controller for the Network Diagnostic and Path Analysis Tool
-#
-# Run:  ryu-manager --observe-links --ofp-tcp-listen-port 6633 d2_controller.py
-#       (REST API on http://127.0.0.1:8080, the port ryu's WSGI uses by default)
-#
-# What it does
-#   1. Topology discovery   : switches/links via ryu.topology (LLDP), hosts via packet-in
-#   2. Path computation     : enumerates every simple switch path between the two hosts
-#   3. Path installation    : proactive per-path flows (no flooding in the diamond loop)
-#   4. Dynamic behaviour    : link down/up events -> path status + automatic failover
-#   5. Closed loop          : diagnostic tool POSTs measured RTT/loss per path, the
-#                             controller (mode "adaptive") moves traffic to the best path
-#   6. REST API             : /d2/topology /d2/paths /d2/select /d2/report /d2/events
-# ============================================================================
+#                                                                                                        D2 - Ryu SDN controller for the Network Diagnostic and Path Analysis Tool
 import json
 
 from ryu.base import app_manager
@@ -25,8 +11,8 @@ from ryu.app.wsgi import ControllerBase, WSGIApplication, route
 from webob import Response
 
 APP_NAME = 'd2_controller_app'
-LOSS_PENALTY_MS = 10.0      # adaptive score = avg_rtt_ms + LOSS_PENALTY_MS * loss_pct
-UNMEASURED_SCORE = 1e6      # alive but never measured -> tried after measured paths
+LOSS_PENALTY_MS = 10.0     
+UNMEASURED_SCORE = 1e6     
 
 
 class D2Controller(app_manager.RyuApp):
@@ -35,16 +21,16 @@ class D2Controller(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(D2Controller, self).__init__(*args, **kwargs)
-        self.datapaths = {}            # dpid -> datapath
-        self.links_all = {}            # (a, b) -> (port_on_a, port_on_b); never removed
-        self.links_alive = set()       # directed (a, b) currently up
-        self.isl_ports = {}            # dpid -> set(ports that face another switch)
-        self.hosts = {}                # mac -> {'dpid','port','ip'}  (insertion ordered)
-        self.mode = 'auto'             # auto | manual | adaptive
-        self.manual_key = None         # path key used in manual mode
-        self.active_key = None         # path key currently installed
-        self.metrics = {}              # path key -> {'avg_rtt_ms','loss_pct','ts'}
-        self.event_log = []               # human-readable event log (for demo/report)
+        self.datapaths = {}            
+        self.links_all = {}          
+        self.links_alive = set()   
+        self.isl_ports = {}           
+        self.hosts = {}              
+        self.mode = 'auto'             
+        self.manual_key = None         
+        self.active_key = None        
+        self.metrics = {}           
+        self.event_log = []               
         self.seq = 0
         wsgi = kwargs['wsgi']
         wsgi.register(D2Rest, {APP_NAME: self})
@@ -68,7 +54,7 @@ class D2Controller(app_manager.RyuApp):
         self.datapaths[dp.id] = dp
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofp.OFPP_CONTROLLER, ofp.OFPCML_NO_BUFFER)]
-        self.add_flow(dp, 0, match, actions)          # table-miss -> controller
+        self.add_flow(dp, 0, match, actions)          
         self.log_event('switch s%d connected' % dp.id)
 
     def add_flow(self, dp, priority, match, actions):
@@ -107,7 +93,6 @@ class D2Controller(app_manager.RyuApp):
         a, b = l.src.dpid, l.dst.dpid
         self.links_alive.discard((a, b))
         self.log_event('link DOWN s%d:%d -> s%d:%d' % (a, l.src.port_no, b, l.dst.port_no))
-        # old measurements of any path that used this link are no longer valid
         for p in self.all_paths():
             if (a, b) in zip(p, p[1:]) or (b, a) in zip(p, p[1:]):
                 self.metrics.pop(self.pkey(p), None)
@@ -172,8 +157,8 @@ class D2Controller(app_manager.RyuApp):
         paths = self.all_paths()
         if not paths:
             return None
-        if self.mode == 'manual':               # forced, even if down (lets the tool
-            for p in paths:                     # observe a failed path end-to-end)
+        if self.mode == 'manual':               
+            for p in paths:                    
                 if self.pkey(p) == self.manual_key:
                     return p
         alive = [p for p in paths if self.path_alive(p)]
@@ -181,7 +166,7 @@ class D2Controller(app_manager.RyuApp):
             return None
         if self.mode == 'adaptive':
             return min(alive, key=lambda p: (self.score(p), len(p), p))
-        return alive[0]                          # auto: shortest alive path
+        return alive[0]                          # auto: the shortest path alive
 
     # --------------------------------------------------------- flow installation
     def reconcile(self, force=False):
@@ -207,7 +192,7 @@ class D2Controller(app_manager.RyuApp):
 
     def install_path(self, path):
         (m1, h1), (m2, h2) = self.host_pair()
-        for dp in self.datapaths.values():                # clear old state first
+        for dp in self.datapaths.values():                
             self.del_flows_for_mac(dp, m1)
             self.del_flows_for_mac(dp, m2)
         for dst_mac, hops, dst_host in ((m2, path, h2), (m1, list(reversed(path)), h1)):
@@ -247,7 +232,7 @@ class D2Controller(app_manager.RyuApp):
         if eth is None or eth.ethertype in (ether_types.ETH_TYPE_LLDP, ether_types.ETH_TYPE_IPV6):
             return
         if not self.discovery_ready():
-            return                       # links unknown -> do not risk flooding a loop
+            return                     
 
         arp_pkt = pkt.get_protocol(arp.arp)
         ip_pkt = pkt.get_protocol(ipv4.ipv4)
@@ -261,7 +246,6 @@ class D2Controller(app_manager.RyuApp):
         if arp_pkt is not None:
             self.flood_edges(dp.id, in_port, msg.data)
         elif eth.dst in self.hosts and self.active_key is not None:
-            # flows now exist: push this first packet through the table
             self.packet_out(dp, in_port, [dp.ofproto.OFPP_TABLE], msg.data)
 
     # ------------------------------------------------------------- REST helpers
