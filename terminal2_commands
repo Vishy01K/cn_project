@@ -1,6 +1,8 @@
 # 1.Clean up any old/broken Mininet networks from previous attempts
 sudo mn -c
 
+D1:
+
 # 2.Start the Diamond Topology
 sudo python3 ~/project123/topo.py
 
@@ -9,3 +11,26 @@ mininet> h2 python3 ~/project123/server.py & (h2 python3 /home/ak/project123/ser
 
 # 4.Run the Diagnostic Client on Host 1
 mininet> h1 python3 ~/project123/client.py 10.0.0.2  (h1 python3 -u /home/ak/project123/client.py 10.0.0.2)
+
+D2:
+
+# 2.Start the diamond topo
+cd ~/project123
+sudo python3 topo.py d2
+
+# 3. Baseline Survey: 
+# Measures all available paths, calculates RTT/Loss, and selects the best path.
+d2survey baseline
+
+# 4. Simulate Network Degradation: 
+# Injects 30% packet loss on the s2-s4 link using netem.
+d2loss s2 s4 30
+
+# 5. Re-Survey (Degraded): 
+# The controller detects the degraded path and automatically reroutes traffic 
+# to the alternative healthy path (s1-s3-s4).
+d2survey degraded
+
+# 6. Restore the Link: 
+# Removes the packet loss from the s2-s4 link.
+d2loss s2 s4 0
