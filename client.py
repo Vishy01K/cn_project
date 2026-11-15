@@ -3,7 +3,7 @@ import time
 
 def start_client(server_ip):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(2.0) # 2 second timeout for packet loss detection
+    sock.settimeout(2.0) #  timeout forthe packet loss detection
     
     server_address = (server_ip, 5005)
     total_packets = 10
@@ -17,14 +17,14 @@ def start_client(server_ip):
         message = f"{i}:{send_time}"
         
         try:
-            # Send UDP probe
-            sock.sendto(message.encode('utf-8'), server_address)
+
+            sock.sendto(message.encode('utf-8'), server_address)              #<----Send UDP probe
             
-            # Wait for reply
+            #reply
             data, server = sock.recvfrom(1024)
             receive_time = time.time()
             
-            # Calculating RTT
+            # calculating the RTT
             rtt = (receive_time - send_time) * 1000 
             print(f"Packet {i}: Success | RTT: {rtt:.4f} ms")
             
@@ -36,23 +36,9 @@ def start_client(server_ip):
     print(f"Summary: Sent {total_packets}, Lost {lost_packets}, Loss Rate: {(lost_packets/total_packets)*100}%")
     sock.close()
 
-# =============================================================================
-# D2  -  Path-aware diagnostics correlated with the SDN controller
-#        (everything from here down to the __main__ block is the D2 section;
-#         the D1 code above is untouched)
-#
-#   probe_path()        UDP probes with sequence matching (stale replies ignored)
-#   run_d2_survey()     forces every controller path in turn, probes it, classifies it
-#                       (HEALTHY / DEGRADED / FAILED / BLACKHOLE), compares paths,
-#                       reports results back so the controller can reroute (adaptive)
-#   monitor_probes()    continuous probing; analyse_failover() correlates outages with
-#                       the controller's link-down / failover events
-#
-#   NOTE: Mininet hosts live in their own network namespace and cannot reach the
-#   controller's REST port. probing therefore runs on h1 (`--d2 probe|monitor`, JSON on
-#   stdout) while the survey/analysis runs where the controller is reachable (topo.py
-#   D2 section calls these functions with probe_fn = "run the probe on h1").
-# =============================================================================
+# =============================
+# D1 ABOVE D2 STARTS FROM HERE
+# =============================
 import sys
 import json
 import csv
@@ -92,15 +78,14 @@ def _probe_once(sock, server_ip, seq, timeout, port=5005):
             data, _ = sock.recvfrom(1024)
         except socket.timeout:
             return None
-        except OSError:                       # e.g. ICMP port unreachable
+        except OSError:                       # e.g.  error -> icmp port unreachable
             return None
         try:
             tag, rseq, _ = data.decode('utf-8').split(':', 2)
             if tag == 'ACK' and int(rseq) == seq:
                 return (time.perf_counter() - t0) * 1000.0
         except ValueError:
-            pass                              # malformed reply: keep waiting
- 
+            pass                          
  
 def summarize(rtts, sent):
     n = len(rtts)
@@ -223,7 +208,7 @@ def run_d2_survey(server_ip='10.0.0.2', count=20, interval=0.05, timeout=1.0,
     if failed:
         print('Failed paths: %s' % ', '.join(failed))
  
-    api('POST', '/d2/select', {'mode': 'adaptive'}, base=base)      # controller applies the result
+    api('POST', '/d2/select', {'mode': 'adaptive'}, base=base)     
     time.sleep(0.3)
     print('Controller now routes via: %s (adaptive)' % api('GET', '/d2/topology', base=base)['active_path'])
  
