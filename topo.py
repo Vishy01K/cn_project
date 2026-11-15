@@ -1,4 +1,4 @@
-from mininet.topo import Topo                                                 # Virtual Network, Client and Server Run on this
+from mininet.topo import Topo                                                                                     # Virtual Network, Client and Server Run on this
 from mininet.net import Mininet
 from mininet.node import RemoteController, OVSKernelSwitch
 from mininet.cli import CLI
@@ -38,22 +38,9 @@ def run():
     CLI(net)
     net.stop()
 
-# =============================================================================
-# D2  -  Scenario automation on top of the D1 topology
-#
-#   sudo python3 topo.py d2          -> topology + echo server on h2 + D2 CLI
-#   sudo python3 topo.py d2 auto     -> same, but first runs all scenarios automatically
-#
-#   (start the controller first:
-#    ryu-manager --observe-links --ofp-tcp-listen-port 6633 d2_controller.py)
-#
-#   D2 CLI commands:  d2survey [label]    compare all paths now
-#                     d2loss s2 s4 30     set packet loss (%) on a link (0 restores)
-#                     d2monitor [secs]    continuous probing, shows outages
-#                     d2auto              run every scenario (baseline, loss, blackhole,
-#                                         link failure + failover timing, recovery)
-#   Plain Mininet commands still work, e.g.  link s1 s2 down  /  link s1 s2 up
-# =============================================================================
+# ============================================================================
+# D2  -  Scenario automation on top of the D1 topology D2 starts from here
+# ============================================================================
 import os
 import sys
 import json
@@ -61,7 +48,6 @@ import time
 
 import client                       # D1 client module; D2 section holds the analysis code
 
-# one-way delay per inter-switch link: path s1-s2-s4 ~20 ms RTT, path s1-s3-s4 ~80 ms RTT
 LINK_DELAYS = {('s1', 's2'): '5ms', ('s1', 's3'): '20ms',
                ('s2', 's4'): '5ms', ('s3', 's4'): '20ms'}
 H2_IP = '10.0.0.2'
@@ -140,7 +126,7 @@ def d2_auto(net):
     time.sleep(3)
 
     print('\n##### Scenario 4: live link failure s1-s2 and recovery, failover timing #####')
-    d2_survey(net, 'pre_failure')                       # adaptive mode, active path measured
+    d2_survey(net, 'pre_failure')                       # adaptive mode
 
     def break_then_repair(n):
         time.sleep(4)
@@ -150,7 +136,7 @@ def d2_auto(net):
         n.configLinkStatus('s1', 's2', 'up')
         return t
     d2_monitor(net, 18, 'link_failure_s1_s2', inject=break_then_repair)
-    time.sleep(6)                                       # LLDP rediscovers the restored link
+    time.sleep(6)                                      
 
     print('\n##### Scenario 5: survey while link s1-s2 is down #####')
     net.configLinkStatus('s1', 's2', 'down')
