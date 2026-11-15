@@ -1,5 +1,10 @@
 # 1. Activate Ryu virtual environment
 source ~/ryu-env/bin/activate(add /project123 for our project)
 
+D1:
 # 2. Start the controller with verbose logging
 ryu-manager --verbose ryu.app.simple_switch_stp_13
+
+D2:
+# 2.Start the controller for D2
+ryu-manager --observe-links --ofp-tcp-listen-port 6633 d2_controller.py
