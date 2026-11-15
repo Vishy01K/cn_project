@@ -1,5 +1,4 @@
-#                                                                                                        D2 - Ryu SDN controller for the Network Diagnostic and Path Analysis Tool
-import json
+import json                                                                                                           # D2 - Ryu SDN controller for the Network Diagnostic and Path Analysis Tool
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
