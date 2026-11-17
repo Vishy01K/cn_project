@@ -48,5 +48,5 @@ d2survey degraded
 # 13.mininet> link s1 s2 up
 # 14.mininet> d2auto                    # optional: timed failover scenario, writes d2_failover.csv
 # 15.mininet> exit
-# 16.python3 d2_report.py               # table and d2_comparison.png
+
 
