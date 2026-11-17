@@ -35,6 +35,18 @@ d2loss s2 s4 30
 # to the alternative healthy path (s1-s3-s4).
 d2survey degraded
 
-# 6. Restore the Link: 
-# Removes the packet loss from the s2-s4 link.
-d2loss s2 s4 0
+# 6.mininet> d2loss s2 s4 0
+# 7.mininet> d2survey recovered         # goes back to the faster path
+# 8.mininet> d2loss s2 s4 100
+# 9.mininet> d2survey blackhole         # BLACKHOLE: controller thinks the link is up
+# 10.mininet> d2loss s2 s4 0
+#11 .mininet> link s1 s2 down
+# 12.mininet> d2survey link_down         # FAILED (link down: s1-s2)
+
+(do this in a third terminal:curl -s localhost:8080/d2/events | python3 -m json.tool)
+
+# 13.mininet> link s1 s2 up
+# 14.mininet> d2auto                    # optional: timed failover scenario, writes d2_failover.csv
+# 15.mininet> exit
+# 16.python3 d2_report.py               # table and d2_comparison.png
+
