@@ -10,59 +10,59 @@ from ryu.app.wsgi import ControllerBase, WSGIApplication, route
 from webob import Response
 
 APP_NAME = 'd2_controller_app'
-LOSS_PENALTY_MS = 10.0     
-UNMEASURED_SCORE = 1e6     
+LOSS_PENALTY_MS = 10.0     #--------->score given to a path, higher value more unstable avoid the path
+UNMEASURED_SCORE = 1e6     #---------> default unmeasured score
 
 
 class D2Controller(app_manager.RyuApp):
-    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
-    _CONTEXTS = {'wsgi': WSGIApplication}
+    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION] #-------------->Open flow ver 1.3 ryu
+    _CONTEXTS = {'wsgi': WSGIApplication}     
 
     def __init__(self, *args, **kwargs):
         super(D2Controller, self).__init__(*args, **kwargs)
-        self.datapaths = {}            
-        self.links_all = {}          
-        self.links_alive = set()   
-        self.isl_ports = {}           
-        self.hosts = {}              
-        self.mode = 'auto'             
+        self.datapaths = {}        #------->needed to send flow rules and packets to switch
+        self.links_all = {}        #------->all inter switch link discovered dead and alive
+        self.links_alive = set()   #------->just the alive ones
+        self.isl_ports = {}        #------->any port NOT in this thing is a host facing port 
+        self.hosts = {}            #------->known hosts
+        self.mode = 'auto'         #------->auto=shortest path alive    
         self.manual_key = None         
         self.active_key = None        
-        self.metrics = {}           
-        self.event_log = []               
-        self.seq = 0
+        self.metrics = {}          #------->measurements given by the probe tool
+        self.event_log = []        #------->recent events
+        self.seq = 0           
         wsgi = kwargs['wsgi']
         wsgi.register(D2Rest, {APP_NAME: self})
 
     # ------------------------------------------------------------------ utils
     def log_event(self, text):
-        self.seq += 1
-        self.event_log.append({'n': self.seq, 't': round(__import__('time').time(), 3), 'event': text})
-        self.event_log = self.event_log[-200:]
-        self.logger.info('D2 | %s', text)
+        self.seq += 1  #------->increase seq so it doesnt take same num again 
+        self.event_log.append({'n': self.seq, 't': round(__import__('time').time(), 3), 'event': text}) #------->round up to millisec and imports
+        self.event_log = self.event_log[-200:]  #keep only the new entries 
+        self.logger.info('D2 | %s', text)       # 
 
     @staticmethod
     def pkey(path):
         return '-'.join('s%d' % d for d in path)
 
     # ------------------------------------------------------- switch handshake
-    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
-    def features_handler(self, ev):
-        dp = ev.msg.datapath
+    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)  
+    def features_handler(self, ev):     #----------->run when switch  connects and saves the datapath
+        dp = ev.msg.datapath            #-----------> rep connection to this switch
         ofp, parser = dp.ofproto, dp.ofproto_parser
-        self.datapaths[dp.id] = dp
+        self.datapaths[dp.id] = dp      #----------->remember the switch so we can send rules and packets
         match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofp.OFPP_CONTROLLER, ofp.OFPCML_NO_BUFFER)]
+        actions = [parser.OFPActionOutput(ofp.OFPP_CONTROLLER, ofp.OFPCML_NO_BUFFER)] #----------->send the whole packet to controller 
         self.add_flow(dp, 0, match, actions)          
         self.log_event('switch s%d connected' % dp.id)
 
     def add_flow(self, dp, priority, match, actions):
         ofp, parser = dp.ofproto, dp.ofproto_parser
-        inst = [parser.OFPInstructionActions(ofp.OFPIT_APPLY_ACTIONS, actions)]
-        dp.send_msg(parser.OFPFlowMod(datapath=dp, priority=priority,
+        inst = [parser.OFPInstructionActions(ofp.OFPIT_APPLY_ACTIONS, actions)]    #----------->run instruction immediately on packet
+        dp.send_msg(parser.OFPFlowMod(datapath=dp, priority=priority,      #----------->add a rule to switch flow table
                                       match=match, instructions=inst))
 
-    def del_flows_for_mac(self, dp, mac):
+    def del_flows_for_mac(self, dp, mac):         #-----------> delete every rule on switch dp that matches the des mac so old rules dont stay
         ofp, parser = dp.ofproto, dp.ofproto_parser
         dp.send_msg(parser.OFPFlowMod(datapath=dp, command=ofp.OFPFC_DELETE,
                                       out_port=ofp.OFPP_ANY, out_group=ofp.OFPG_ANY,
@@ -74,7 +74,7 @@ class D2Controller(app_manager.RyuApp):
         dp.send_msg(parser.OFPPacketOut(datapath=dp, buffer_id=ofp.OFP_NO_BUFFER,
                                         in_port=in_port, actions=actions, data=data))
 
-    # ------------------------------------------------- topology discovery (D2)
+    # ------------------------------------------------- topology discovery (D2) diamond topology
     @set_ev_cls(event.EventLinkAdd)
     def link_add(self, ev):
         l = ev.link
