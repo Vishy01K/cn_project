@@ -209,16 +209,16 @@ class D2Controller(app_manager.RyuApp):
 
     # -------------------------------------------------------------- packet-in
     def edge_ports(self, dpid):
-        dp = self.datapaths[dpid]
+        dp = self.datapaths[dpid] #-----> lists every port on swtich
         ports = {p for p in dp.ports if p < dp.ofproto.OFPP_MAX}
-        return ports - self.isl_ports.get(dpid, set())
+        return ports - self.isl_ports.get(dpid, set()) #--->all real switch ports minus switch to switch gives only hosts
 
     def flood_edges(self, src_dpid, src_port, data):
         """ARP/broadcast: flood ONLY on host-facing ports -> no loop in the diamond."""
         for dpid, dp in self.datapaths.items():
             ports = [p for p in self.edge_ports(dpid)
                      if not (dpid == src_dpid and p == src_port)]
-            if ports:
+            if ports:       #----->only send when ports are there to send to
                 self.packet_out(dp, dp.ofproto.OFPP_CONTROLLER, ports, data)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
@@ -247,7 +247,7 @@ class D2Controller(app_manager.RyuApp):
         elif eth.dst in self.hosts and self.active_key is not None:
             self.packet_out(dp, in_port, [dp.ofproto.OFPP_TABLE], msg.data)
 
-    # ------------------------------------------------------------- REST helpers
+    # ------------------------------------------------------------- REST helpers    This part turns the controller’s internal state into JSON and exposes it over HTTP
     def describe_topology(self):
         links = []
         seen = set()
